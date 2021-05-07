@@ -53,7 +53,6 @@ public class MoveItem : ItemControl
         }
     }
 
-
     #region OnTrigger
     private void OnTriggerEnter2D(Collider2D collision)
     {
@@ -80,19 +79,4 @@ public class MoveItem : ItemControl
         }
     }
     #endregion
-
-    /// <summary>
-    /// 從外部設定MatchPosObj，只有初始化時才會呼叫
-    /// </summary>
-    /// <param name="matchPosObj"></param>
-    public void SetMatchPosParent(GameObject matchPosObj)
-    {
-        if (matchPosObj.tag.Equals("matchPosItem"))
-        {
-            m_ColliderObj = matchPosObj;
-            this.transform.SetParent(m_ColliderObj.transform);
-            transform.position = new Vector3(this.m_ColliderObj.transform.position.x + offsetX, this.m_ColliderObj.transform.position.y + offsetY, -2);
-            GetComponent<SpriteRenderer>().sortingOrder = 2;
-        }
-    }
 }

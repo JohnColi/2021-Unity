@@ -1,10 +1,10 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Events;
 
-/// <summary>
-/// 物件感應區
-/// </summary>
+/// <summary> 物件感應區 </summary>
 [RequireComponent(typeof(SpriteRenderer))]
 [RequireComponent(typeof(BoxCollider2D))]
 public class MatchPosItemControl : MonoBehaviour
@@ -21,6 +21,10 @@ public class MatchPosItemControl : MonoBehaviour
     [Header("正確的配對物件index")]
     public int ansObjIndex;
 
+    /// <summary> 不需要配對物件 </summary>
+    [Header("不需要配對物件")]
+    public bool isNotNeedToPair;
+
     /// <summary> 答對後要生成的物件 </summary>
     [Header("答對後要生成的物件")]
     public GameObject CorrectObj;
@@ -33,9 +37,11 @@ public class MatchPosItemControl : MonoBehaviour
     [Header("BoxCollider碰撞區域縮放比例")]
     public Vector2 BoxColliderScale;
 
-    /// <summary> 是否是答案 </summary>
-    [Header("是否要放正確答案")]
-    public bool isAnswer;
+    /// <summary> 配對成功 不再作用 </summary>
+    [Header("配對成功 不再作用")]
+    public bool isOncePair;
+
+    public Action pairCompleteEvent;
 
     private void Start()
     {
@@ -52,6 +58,11 @@ public class MatchPosItemControl : MonoBehaviour
 
     public bool CheckAnsIsRight()
     {
+        if (isNotNeedToPair)
+        {
+            return transform.childCount == 0;
+        }
+
         if (!isCheckObjName && !isCheckObjIndex)
         {
             Debug.LogError("isCheckObjName & isCheckObjIndex are false!!");
@@ -75,10 +86,22 @@ public class MatchPosItemControl : MonoBehaviour
         return true;
     }
 
-    /// <summary>
-    /// 碰撞到的物件名字，抓取子物件名稱
-    /// </summary>
-    /// <returns></returns>
+    public void CheckPair()
+    {
+        if (isOncePair && CheckAnsIsRight())
+        {
+            GetComponent<Collider2D>().enabled = false;
+            for (int i = 0; i < transform.childCount; i++)
+            {
+                transform.GetChild(i).GetComponent<Collider2D>().enabled = false;
+            }
+            Debug.Log("配對成功 不再使用");
+
+            pairCompleteEvent?.Invoke();
+        }
+    }
+
+    /// <summary> 碰撞到的物件名字，抓取子物件名稱 </summary>
     public List<GameObject> OnCollisionObjName()
     {
         List<GameObject> m_OnColliderObjName = new List<GameObject>();
@@ -107,25 +130,16 @@ public class MatchPosItemControl : MonoBehaviour
     [ContextMenu("檢查內容物")]
     private void TestCheckAns()
     {
-        Debug.Log(CheckAnsIsRight());
+        Debug.Log("是否答對 : " + CheckAnsIsRight());
         //string str = CheckAnsIsRight() ? "正確" : "錯誤";
     }
 #endif
-
-    private void OnDrawGizmos()
-    {
-        if (isAnswer)
-        {
-            Gizmos.color = Color.red;
-            Gizmos.DrawWireSphere(transform.position, 0.5f);
-        }
-    }
 
     private void OnDrawGizmosSelected()
     {
         if (CorrectObj != null)
         {
-            Gizmos.color = Color.blue;
+            Gizmos.color = Color.red;
             Vector3 corpos = CorrectObjPos;
             Gizmos.DrawWireSphere(transform.position + corpos, 0.5f);
         }
