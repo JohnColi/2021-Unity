@@ -5,8 +5,6 @@ using UnityEngine;
 [RequireComponent(typeof(Rigidbody2D))]
 public class MoveItem : ItemControl
 {
-    public int score;
-
     public EcolliderType ecolliderType;
     public enum EcolliderType
     {
@@ -58,7 +56,7 @@ public class MoveItem : ItemControl
     {
         if (collision.tag == "matchPosItem")
         {
-            //Debug.Log("Enter " + collision.name);
+            Debug.Log("Enter " + collision.name);
             enterColliders.Add(collision.gameObject);
         }
         else if (collision.tag == "removeItem")
@@ -71,6 +69,7 @@ public class MoveItem : ItemControl
     {
         if (collision.tag == "matchPosItem")
         {
+            Debug.Log("Exit " + collision.name);
             enterColliders.Remove(collision.gameObject);
         }
         else if (collision.tag == "removeItem")

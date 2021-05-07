@@ -18,9 +18,9 @@ public class ItemControl : MonoBehaviour
     protected Vector3 tempV3;
     #endregion
 
-    [Header("對答案用")]
-    /// <summary> 對答案用 </summary>
-    public int index;
+    [Header("數值")]
+    /// <summary> 數值 </summary>
+    public int value;
 
     [Header("移動區域")]
     public Transform m_MoveArea;
@@ -174,22 +174,24 @@ public class ItemControl : MonoBehaviour
                 float lastdis = float.MaxValue;
                 for (int i = 0; i < enterColliders.Count; i++)
                 {
-                    if (enterColliders[i].transform.childCount != 0 && enterColliders[i].transform.GetChild(0).gameObject != this.gameObject)
+                    if (enterColliders[i].GetComponent<MatchPosItemControl>().isMultpPair)
                     {
-                        Debug.LogFormat("有子物件不比對{0}", enterColliders[i].name);
-                    }
-                    else
-                    {
-                        float dis = Vector2.Distance(this.transform.position, enterColliders[i].transform.position);
-                        if (dis < lastdis)
+                        if (enterColliders[i].transform.childCount != 0 && enterColliders[i].transform.GetChild(0).gameObject != this.gameObject)
                         {
-                            lastdis = dis;
-                            m_ColliderObj = enterColliders[i];
+                            Debug.LogFormat("有子物件不比對{0}", enterColliders[i].name);
+                            continue;
                         }
+                    }
+
+                    float dis = Vector2.Distance(this.transform.position, enterColliders[i].transform.position);
+                    if (dis < lastdis)
+                    {
+                        lastdis = dis;
+                        m_ColliderObj = enterColliders[i];
                     }
                 }
 
-                if (!m_IsMagnetic)
+                if (m_IsMagnetic)
                 {
                     if (m_ColliderObj == null)
                     {

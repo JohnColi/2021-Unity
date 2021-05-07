@@ -15,15 +15,19 @@ public class MatchPosItemControl : MonoBehaviour
     [Header("正確的配對物件名字")]
     public string ansObjName;
 
-    [Header("檢查obj index 判斷是否正確")]
-    public bool isCheckObjIndex;
+    [Header("檢查分數是否正確")]
+    public bool isCheckScore;
 
-    [Header("正確的配對物件index")]
-    public int ansObjIndex;
+    [Header("配對物件的總分數")]
+    public int ansScore;
 
     /// <summary> 不需要配對物件 </summary>
     [Header("不需要配對物件")]
     public bool isNotNeedToPair;
+
+    /// <summary> 可以多個配對 </summary>
+    [Header("可以多個配對")]
+    public bool isMultpPair;
 
     /// <summary> 答對後要生成的物件 </summary>
     [Header("答對後要生成的物件")]
@@ -63,12 +67,13 @@ public class MatchPosItemControl : MonoBehaviour
             return transform.childCount == 0;
         }
 
-        if (!isCheckObjName && !isCheckObjIndex)
+        if (!isCheckObjName && !isCheckScore)
         {
             Debug.LogError("isCheckObjName & isCheckObjIndex are false!!");
             return false;
         }
 
+        int score = 0;
         for (int i = 0; i < transform.childCount; i++)
         {
             if (isCheckObjName)
@@ -77,12 +82,15 @@ public class MatchPosItemControl : MonoBehaviour
                     return false;
             }
 
-            if (isCheckObjIndex)
+            if (isCheckScore)
             {
-                if (transform.GetChild(i).GetComponent<ItemControl>().index != ansObjIndex)
-                    return false;
+                score += transform.GetChild(i).GetComponent<ItemControl>().value;
             }
         }
+
+        if (isCheckScore)
+            return score == ansScore;
+
         return true;
     }
 
@@ -124,6 +132,16 @@ public class MatchPosItemControl : MonoBehaviour
     {
         int count = this.transform.childCount;
         return count;
+    }
+
+    public int GetScore()
+    {
+        int score = 0;
+        for (int i = 0; i < transform.childCount; i++)
+        {
+            score += transform.GetChild(i).GetComponent<ItemControl>().value;
+        }
+        return score;
     }
 
 #if UNITY_EDITOR
