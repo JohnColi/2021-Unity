@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -18,27 +19,31 @@ public class ItemControl : MonoBehaviour
     protected Vector3 tempV3;
     #endregion
 
-    [Header("數值")]
+    /// <summary> 拖拉移動 </summary>
+    [Header("拖拉移動")]
+    public bool isDragMove;
+
     /// <summary> 數值 </summary>
+    [Header("數值")]
     public int value;
 
     [Header("移動區域")]
     public Transform m_MoveArea;
 
-    [Header("孝正中心點的位置")]
-    /// <summary> 孝正中心點的位置 </summary>
+    /// <summary> 校正中心點的位置 </summary>
+    [Header("校正中心點的位置")]
     public Vector2 offset;
 
-    [Header("移動限制")]
     /// <summary> 移動限制 </summary>
+    [Header("移動限制")]
     public bool isMovementRestriction;
 
-    [Header("移動限制距離 X")]
     /// <summary> 移動限制距離 X </summary>
+    [Header("移動限制距離 X")]
     public Vector2 moveRangeX;
 
-    [Header("移動限制距離 Y")]
     /// <summary> 移動限制距離 Y </summary>
+    [Header("移動限制距離 Y")]
     public Vector2 moveRangeY;
 
     protected GameObject m_ColliderObj;
@@ -50,6 +55,14 @@ public class ItemControl : MonoBehaviour
     /// <summary> 無限拖拉 </summary>
     [Header("無限拖拉")]
     public bool m_IsCloneByDrag;
+
+    /// <summary> 顯示原始透明圖片 </summary>
+    [Header("顯示原始透明圖片")]
+    public bool m_IsShowTransparentPicture;
+
+    /// <summary> 不在感應區內就退回原位 </summary>
+    [Header("不在感應區內就退回原位")]
+    public bool m_IsNotPosItemBackToOriPos;
 
     /// <summary> 超過視窗回到上一步，false = 刪除自己 </summary>
     [Header("超過視窗 退到上一步")]
@@ -63,63 +76,85 @@ public class ItemControl : MonoBehaviour
     /// <summary> 碰撞到的GameObject </summary>
     protected List<GameObject> enterColliders = new List<GameObject>();
 
-    /// <summary> 是否是被複製出來的 </summary>
+    /// <summary> 是否複製過 </summary>
     protected bool m_isCloen = false;
 
     /// <summary> 是否在垃圾桶 </summary>
     protected bool needRemove;
 
+    protected bool isMoving;
+
+    private GameObject cloneGo;
+
     int hightOrder = 10;
     int normalOrder;
 
+    public Action m_SetPosForGridEvent;
+
     #region OnMouse
-    private void OnMouseDown()
+
+    private void Start()
     {
-        v3_DragStartPos = transform.position;
-        v3_offsetToMouse = v3_DragStartPos - Camera.main.ScreenToWorldPoint(new Vector3(Input.mousePosition.x, Input.mousePosition.y, transform.position.z));
+        if (GetComponent<MoveGird>())
+            m_SetPosForGridEvent = delegate { GetComponent<MoveGird>().SetPosForGird(); };
 
-        var spr = GetComponent<SpriteRenderer>();
-        normalOrder = spr.sortingOrder;
-        spr.sortingOrder = hightOrder;
-
-        if (moveRangeX.x > moveRangeX.y || moveRangeY.x > moveRangeY.y)
-            Debug.LogError("限制區域的最小值大於最大值");
+        StartInit();
     }
 
-    private void OnMouseDrag()
+    protected virtual void StartInit()
     {
-        transform.position = Camera.main.ScreenToWorldPoint(new Vector3(Input.mousePosition.x, Input.mousePosition.y, transform.position.z)) + v3_offsetToMouse;
+        v3_OriginalPos = this.transform.position;
 
-        if (isMovementRestriction)
+        if (m_IsShowTransparentPicture && !m_IsCloneByDrag)
         {
-            tempV3 = transform.position;
-            if (tempV3.x < moveRangeX.x)
-                tempV3.x = moveRangeX.x;
-            else if (tempV3.x > moveRangeX.y)
-                tempV3.x = moveRangeX.y;
+            GameObject go = new GameObject(this.gameObject.name);
+            go.transform.position = v3_OriginalPos;
+            var sp = go.AddComponent<SpriteRenderer>();
+            sp.sprite = this.GetComponent<SpriteRenderer>().sprite;
+            sp.sortingOrder = normalOrder;
+            var color = sp.color;
+            color.a *= 0.5f;
+            sp.color = color;
+        }
+    }
 
-            if (tempV3.y < moveRangeY.x)
-                tempV3.y = moveRangeY.x;
-            else if (tempV3.y > moveRangeY.y)
-                tempV3.y = moveRangeY.y;
+    private void OnMouseDown()
+    {
+        if (!isMoving)
+        {
+            if (!m_isCloen && m_IsCloneByDrag)
+            {
+                cloneGo = CloneThis();
+            }
 
-            transform.position = tempV3;
+            v3_DragStartPos = transform.position;
+            v3_offsetToMouse = v3_DragStartPos - Camera.main.ScreenToWorldPoint(new Vector3(Input.mousePosition.x, Input.mousePosition.y, transform.position.z));
+
+            var spr = GetComponent<SpriteRenderer>();
+            normalOrder = spr.sortingOrder;
+            spr.sortingOrder = hightOrder;
+
+            if (moveRangeX.x > moveRangeX.y || moveRangeY.x > moveRangeY.y)
+                Debug.LogError("限制區域的最小值大於最大值");
         }
 
-        //複製
-        float moveDis = Vector3.Distance(v3_DragStartPos, transform.position);
-        if (!m_isCloen && m_IsCloneByDrag && moveDis > 0)
+        if (isDragMove)
         {
-            m_isCloen = true;
-            GameObject go = Instantiate(this.gameObject);
-            go.name = this.gameObject.name;
-            go.transform.position = v3_OriginalPos;
-            go.GetComponent<SpriteRenderer>().sortingOrder = normalOrder;
+            isMoving = true;
+        }
+        else
+        {
+            isMoving = !isMoving;
         }
     }
 
     private void OnMouseUp()
     {
+        if (isDragMove)
+        {
+            isMoving = false;
+        }
+
         GetComponent<SpriteRenderer>().sortingOrder = normalOrder;
         v3_DragEndPos = transform.position;
 
@@ -129,18 +164,19 @@ public class ItemControl : MonoBehaviour
 
         float moveDis = Vector3.Distance(v3_DragStartPos, v3_DragEndPos);
 
-        if (moveDis < 0.2f)
+        if (moveDis < 0.1f)
         {
-            if (m_IsCloneByDrag)
+            if (isDragMove)
             {
-                if (this.transform.position != v3_OriginalPos)
-                    Destroy(this.gameObject);
-            }
-            else
-            //移動不夠回到原位
-            if (m_IsBackToOriPos)
-            {
-                Back2OriPos();
+                if (m_IsCloneByDrag)
+                {
+                    if (this.transform.position != v3_OriginalPos)
+                        Destroy(cloneGo);
+                }
+                else if (m_IsBackToOriPos) //移動不夠回到原位
+                {
+                    Back2OriPos();
+                }
             }
         }
         else if (posX < 0 || posY < 0 || posY > Screen.height || posX > Screen.width)
@@ -148,7 +184,7 @@ public class ItemControl : MonoBehaviour
             if (m_IsCloneByDrag)
             {
                 if (this.transform.position != v3_OriginalPos)
-                    Destroy(this.gameObject);
+                    Destroy(cloneGo);
             }
             else
             {
@@ -220,11 +256,55 @@ public class ItemControl : MonoBehaviour
 
                 m_ColliderObj = null;
                 this.transform.SetParent(m_MoveArea);
-                GetComponent<SpriteRenderer>().sortingOrder = normalOrder;
+                if (m_IsNotPosItemBackToOriPos)
+                {
+                    if (m_IsCloneByDrag)
+                    {
+                        Destroy(this.gameObject);
+                        return;
+                    }
+                    else
+                        Back2OriPos();
+                }
+                else
+                    m_SetPosForGridEvent?.Invoke();
             }
         }
     }
     #endregion
+
+    private void FixedUpdate()
+    {
+        if (isMoving)
+        {
+            transform.position = Camera.main.ScreenToWorldPoint(new Vector3(Input.mousePosition.x, Input.mousePosition.y, transform.position.z)) + v3_offsetToMouse;
+
+            if (isMovementRestriction)
+            {
+                tempV3 = transform.position;
+                if (tempV3.x < moveRangeX.x)
+                    tempV3.x = moveRangeX.x;
+                else if (tempV3.x > moveRangeX.y)
+                    tempV3.x = moveRangeX.y;
+
+                if (tempV3.y < moveRangeY.x)
+                    tempV3.y = moveRangeY.x;
+                else if (tempV3.y > moveRangeY.y)
+                    tempV3.y = moveRangeY.y;
+
+                transform.position = tempV3;
+            }
+        }
+    }
+
+    private GameObject CloneThis()
+    {
+        GameObject go = Instantiate(this.gameObject, v3_OriginalPos, this.transform.rotation);
+        go.name = this.gameObject.name;
+        go.GetComponent<SpriteRenderer>().sortingOrder = normalOrder;
+        m_isCloen = true;
+        return go;
+    }
 
     public void SetMatchPosParent(GameObject matchPosObj)
     {
@@ -239,6 +319,7 @@ public class ItemControl : MonoBehaviour
     {
         this.transform.SetParent(null);
         this.transform.position = v3_OriginalPos;
+        //m_SetPosForGridEvent?.Invoke();
     }
 
     private void OnDrawGizmosSelected()

@@ -26,10 +26,10 @@ public class MoveGird : MonoBehaviour
         }
     }
 
-    private void OnMouseUp()
-    {
-        SetPosForGird();
-    }
+    //private void OnMouseUp()
+    //{
+    //    SetPosForGird();
+    //}
 
     public void SetGird(float width, float height)
     {
@@ -59,6 +59,11 @@ public class MoveGird : MonoBehaviour
         Debug.Log(spr.bounds.size.x + " / " + spr.bounds.size.y);
     }
 #endif
+    private IEnumerator DelayDoEvent(System.Action action)
+    {
+        yield return new WaitForEndOfFrame();
+        action?.Invoke();
+    }
 
     private void OnDrawGizmosSelected()
     {

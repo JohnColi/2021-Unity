@@ -13,9 +13,9 @@ public class MoveItem : ItemControl
         Polygon,
     }
 
-    void Start()
+    protected override void StartInit()
     {
-        v3_OriginalPos = this.transform.position;
+        base.StartInit();
         if (m_MoveArea == null)
         {
             if (GameObject.Find("MoveArea"))
